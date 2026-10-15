@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "age-plugin-trezor-slip11"
+dynamic = ["version"]
+
+authors = [
+    { name = "Julien Loctaux", email = "contact@jloc.fr" },
+]
+description = "Plugin for symmetric encryption with age using a Trezor device."
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICENSE.txt"]
+
+requires-python = ">=3.10"
+dependencies = [
+    "trezor ~= 0.20"
+]
+
+[project.scripts]
+age-plugin-trezor-slip11 = "age_plugin_trezor_slip11.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/azert9/age-plugin-trezor-slip11"
+Issues = "https://github.com/azert9/age-plugin-trezor-slip11/issues"
+
+[tool.hatch.version]
+source = "env"
+variable = "PACKAGE_VERSION"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/age_plugin_trezor_slip11"]
