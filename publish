@@ -1,0 +1,40 @@
+#!/bin/bash
+set -eu
+
+if [[ "$#" != 1 ]]
+then
+  echo "usage: $0 PACKAGE_VERSION" >&2
+  exit 1
+fi
+
+version="$1"
+
+tmp_dir="$(mktemp -d)"
+function cleanup
+{
+  cd /
+  rm -rf "$tmp_dir"
+}
+
+cd "$tmp_dir"
+
+git clone https://github.com/azert9/age-plugin-trezor-slip11.git
+git -C age-plugin-trezor-slip11 switch --detach "$version"
+
+cat <<'EOF' > ./package
+set -eu
+
+pip install build twine
+
+python3 -m build
+
+python3 -m twine upload dist/*
+EOF
+
+podman run --rm -ti \
+  -v ./age-plugin-trezor-slip11:/build:z \
+  -v ./package:/package:z \
+  --workdir=/build \
+  -e PACKAGE_VERSION="$version" \
+  docker.io/python:3.15 \
+  bash /package
