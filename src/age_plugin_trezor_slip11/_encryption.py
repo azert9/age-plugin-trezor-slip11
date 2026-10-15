@@ -19,31 +19,6 @@ class Params:
     ask_on_encrypt: bool = True
     ask_on_decrypt: bool = True
 
-    @staticmethod
-    def decode(data: bytes) -> "Params":
-        if len(data) < 1:
-            raise ValueError("not enough bytes in serialized encryption params")
-        if data[0] != 0:
-            raise ValueError("unsupported version of serialized encryption params")
-        if len(data) < 2:
-            raise ValueError("not enough bytes in serialized encryption params")
-        return Params(
-            key=data[2:].decode(),
-            ask_on_encrypt=data[1] & 1 != 0,
-            ask_on_decrypt=data[1] & 2 != 0,
-        )
-
-    def encode(self) -> bytes:
-        flags = 0
-        if self.ask_on_encrypt:
-            flags |= 1
-        if self.ask_on_decrypt:
-            flags |= 2
-        return bytes([
-            0,  # format version
-            flags,
-        ]) + self.key.encode()
-
 
 class Device(abc.ABC):
     def encrypt(self, params: Params, data: bytes) -> bytes:

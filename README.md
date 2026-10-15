@@ -20,7 +20,7 @@ The `KEY` parameter in the example bellow is what will be displayed on the devic
 or decrypting messages.
 
 ```shell
-age-plugin-trezor-slip11 generate-identity --key=KEY > identity.txt
+age-plugin-trezor-slip11 encode-identity --key=KEY > identity.txt
 ```
 
 You can then encrypt or decrypt messages by passing the generated identity to age:

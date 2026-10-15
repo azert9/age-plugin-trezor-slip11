@@ -6,7 +6,6 @@ import logging
 import os
 import re
 import sys
-import uuid
 from dataclasses import dataclass
 
 from . import _bech32
@@ -76,40 +75,54 @@ class _Stanza:
 
 @dataclass
 class _TrezorIdentity:
-    id: bytes
     encryption_params: _encryption.Params
 
-    @staticmethod
-    def generate(encryption_params: _encryption.Params) -> "_TrezorIdentity":
-        return _TrezorIdentity(uuid.uuid4().bytes, encryption_params)
-
     def encode(self) -> str:
-        return _bech32.encode(_AGE_IDENTITY_HRP, self.id + self.encryption_params.encode()).upper()
+        return _bech32.encode(_AGE_IDENTITY_HRP, self.encode_raw()).upper()
+
+    def encode_raw(self) -> bytes:
+        flags = 0
+        if self.encryption_params.ask_on_encrypt:
+            flags |= 1
+        if self.encryption_params.ask_on_decrypt:
+            flags |= 2
+        return bytes([
+            0,  # format version
+            flags,
+        ]) + self.encryption_params.key.encode()
 
     @staticmethod
     def decode(identity: str) -> "_TrezorIdentity":
         (hrp, body) = _bech32.decode(identity)
         if hrp.upper() != _AGE_IDENTITY_HRP:
             raise ValueError(f"unsupported identity type {repr(hrp)}")
+        return _TrezorIdentity.decode_raw(body)
 
-        if len(body) < 16:
-            raise ValueError(f"identity body too short")
+    @staticmethod
+    def decode_raw(data: bytes) -> "_TrezorIdentity":
+        if len(data) < 1:
+            raise ValueError("identity body is empty")
+        if data[0] != 0:
+            raise ValueError(f"unsupported identity format version {data[0]}")
 
-        return _TrezorIdentity(
-            body[:16],
-            _encryption.Params.decode(body[16:]),
+        encryption_params = _encryption.Params(
+            key=data[2:].decode(),
+            ask_on_encrypt=data[1] & 1 != 0,
+            ask_on_decrypt=data[1] & 2 != 0,
         )
+
+        return _TrezorIdentity(encryption_params)
 
 
 @dataclass
 class _WrappedKey:
-    identity_id: bytes
+    identity_id: bytes  # identity serialized deterministically
     encrypted_key: bytes
 
     @staticmethod
     def generate(device: _encryption.Device, identity: _TrezorIdentity, key: bytes) -> "_WrappedKey":
         encrypted_key = device.encrypt(identity.encryption_params, key)
-        return _WrappedKey(identity_id=identity.id, encrypted_key=encrypted_key)
+        return _WrappedKey(identity_id=identity.encode_raw(), encrypted_key=encrypted_key)
 
     def unwrap(self, device: _encryption.Device, encryption_params: _encryption.Params) -> bytes:
         return device.decrypt(encryption_params, self.encrypted_key)
@@ -197,7 +210,7 @@ def _run(protocol: _AgePluginProtocol, stanzas: list[_Stanza], device: _encrypti
     for identity_index in range(len(identities)):
         try:
             identity = _TrezorIdentity.decode(identities[identity_index])
-            decoded_identities[identity.id] = (identity_index, identity)
+            decoded_identities[identity.encode_raw()] = (identity_index, identity)
         except Exception as e:
             _send_identity_error(identity_index, str(e))
 
@@ -225,7 +238,7 @@ def _run(protocol: _AgePluginProtocol, stanzas: list[_Stanza], device: _encrypti
                 for recipient in stanzas:
                     if recipient.arg0 == _AGE_RECIPIENT_STANZA:
                         wrapped_key = _WrappedKey.decode(recipient)
-                        x = decoded_identities.get(wrapped_key.identity_id)
+                        x = decoded_identities.get(_TrezorIdentity.decode_raw(wrapped_key.identity_id).encode_raw())
                         if x is not None:
                             identity_index, identity = x
                             key = wrapped_key.unwrap(device, identity.encryption_params)
@@ -271,13 +284,13 @@ def _main_inner(args):
             raise Exception("age plugin state machine specified, but not in plugin mode")
 
         match args.subcommand:
-            case "generate-identity":
+            case "encode-identity":
                 encryption_params = _encryption.Params(
                     key=args.key,
                     ask_on_encrypt=not args.dont_ask_on_encrypt,
                     ask_on_decrypt=not args.dont_ask_on_decrypt,
                 )
-                identity = _TrezorIdentity.generate(encryption_params)
+                identity = _TrezorIdentity(encryption_params)
                 print(identity.encode())
 
             case x:
@@ -301,10 +314,10 @@ def main():
 
     arg_subparsers = arg_parser.add_subparsers(dest="subcommand")
 
-    arg_subparser_generate_identity = arg_subparsers.add_parser("generate-identity")
-    arg_subparser_generate_identity.add_argument("--key", required=True)
-    arg_subparser_generate_identity.add_argument("--dont-ask-on-encrypt", action="store_true")
-    arg_subparser_generate_identity.add_argument("--dont-ask-on-decrypt", action="store_true")
+    arg_subparser_encode_identity = arg_subparsers.add_parser("encode-identity")
+    arg_subparser_encode_identity.add_argument("--key", required=True)
+    arg_subparser_encode_identity.add_argument("--dont-ask-on-encrypt", action="store_true")
+    arg_subparser_encode_identity.add_argument("--dont-ask-on-decrypt", action="store_true")
 
     args = arg_parser.parse_args()
 

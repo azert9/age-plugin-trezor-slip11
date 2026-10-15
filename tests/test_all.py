@@ -15,12 +15,12 @@ class Context:
         self.__serial = 0
         self.mode = Mode.VIRTUAL
 
-    def write_identity(self, tmp_dir: pathlib.Path, identity: str | None = None) -> str:
+    def write_identity(self, tmp_dir: pathlib.Path, identity: str | None = None, key: str = "tests") -> str:
         self.__serial += 1
         if identity is None:
             identity = self.plugin(
-                "generate-identity",
-                "--key=tests",
+                "encode-identity",
+                f"--key={key}",
                 "--dont-ask-on-encrypt",
                 "--dont-ask-on-decrypt",
             ).stdout.decode("utf-8")
@@ -85,7 +85,7 @@ def test_can_run_age(context: Context, tmp_path):
     context.age_keygen(tmp_path)
 
 
-def test_generate_identity(context: Context, tmp_path):
+def test_encode_identity(context: Context, tmp_path):
     identity_path = context.write_identity(tmp_path)
     with open(identity_path, "r") as f:
         identity = f.read()
@@ -101,15 +101,15 @@ def test_simple(context: Context, tmp_path, mode: Mode):
     if mode == Mode.STORED:
         identity_path = context.write_identity(
             tmp_path,
-            "AGE-PLUGIN-TREZOR-SLIP11-1U0ZLFCE5L9Y3EGVNUUS37KENY5QQQAR9WD6Q74YU73",
+            "AGE-PLUGIN-TREZOR-SLIP11-1QQQ8GETNW3ESEPWSWU",
         )
         ciphertext = b"""-----BEGIN AGE ENCRYPTED FILE-----
 YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IGpsb2MuZnIvYWdlLXBsdWdpbi10cmV6
-b3Itc2xpcDExIDQ4WDA0elQ1U1J5aGsrY2hIMXN6SlEKSDUyYXhFOTRkOThQa2RC
-RlVYZFc4WmRGK2dETXRJQzk4cm5tdTVKSTFzL1p5bnUvem9YNWFOazB2YW1IT090
-MQp2bEY0aHcwY3IwbTd5cjBSQUExa1N3Ci0tLSBSVDRiVC9TVmtlWmN5UVNnSWtI
-ZTJkTDNScUhIaXk0Q0xsTlAxakFjaTV3CvsMZri5j34EyjIrsEHitq0Ba6HQl2iG
-MBkyOvZ864jmG/H8xrQnT6l4/cCl8Q==
+b3Itc2xpcDExIEFBQjBaWE4wY3cKMVVJaHVSRFdoMFQ4Q3EzbXowWmZoSTlPaU5O
+WXFTclZhNUJ5cENQM3ZFMk8wQ1ltbERwMSs2eXJmRUhWTDRtVgpvcGw5YWtFMzA2
+Q3hIRXQ4N2tKak93Ci0tLSBzdGtVbVBZNHZrdjNkdVlxdzdNYWJreE16ckZpNEo0
+aTk4aVZoSXhLVko4CruZup5FmK4PMHxf1tvV9Hsz4lxS+IHe/RkZqTVhLd8WsVCB
+KL/jH4fze5RFEA==
 -----END AGE ENCRYPTED FILE-----
 """
     else:
@@ -128,29 +128,23 @@ def test_multiple_identities(context: Context, tmp_path, mode: Mode):
     message = b"bloup bloup"
 
     if mode == Mode.STORED:
-        identity1_path = context.write_identity(
-            tmp_path,
-            "AGE-PLUGIN-TREZOR-SLIP11-1TQMP96ZW7FYZTG2A94CYT8K8XYQQQAR9WD6QWRT697",
-        )
-        identity2_path = context.write_identity(
-            tmp_path,
-            "AGE-PLUGIN-TREZOR-SLIP11-17PVMNAVGDP9H3TXXQ8APJFY66GQQQAR9WD6QHTR94N",
-        )
+        identity1_path = context.write_identity(tmp_path, "AGE-PLUGIN-TREZOR-SLIP11-1QQQ8GETNW3ESEPWSWU")
+        identity2_path = context.write_identity(tmp_path, "AGE-PLUGIN-TREZOR-SLIP11-1QQQ8GETNW3EJQVSWMQSV4")
         ciphertext = b"""-----BEGIN AGE ENCRYPTED FILE-----
 YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IGpsb2MuZnIvYWdlLXBsdWdpbi10cmV6
-b3Itc2xpcDExIFdEWVM2RTd5U0NXaFhTMXdSWjdITVEKYnJLNzE0bE1uUUpURjFo
-RE9WZ2M3WlYwNXpWamY0c1pIcmR5TERPYzBJZ3lPL1RqMzVic3EzbzhOSnB5Ry9P
-Ngp2bEY0aHcwY3IwbTd5cjBSQUExa1N3Ci0+IGpsb2MuZnIvYWdlLXBsdWdpbi10
-cmV6b3Itc2xpcDExIDhGbTU5WWhvUzNpc3hnSDZHU1NhMGcKakQxb3hrT1R0SG1V
-eFVCZ3F0Q3FOVS9EQzN3aklXYjJnRDFadzA1cXIzWXlPL1RqMzVic3EzbzhOSnB5
-Ry9PNgp2bEY0aHcwY3IwbTd5cjBSQUExa1N3Ci0tLSA3SGh1WExQMEhzVU1zaXdt
-eVdZZ2JtaFhkOGo1YnBxdHBKcElaRnFmU3BzChcMpUT2zAH+ZduF/oo5uy2TEg5t
-+JFGBAyYEkfAqtLRdnn0UYkV2k8S9R8=
+b3Itc2xpcDExIEFBQjBaWE4wY3cKNlZ1NDRncFdXME9kbnpaMEJ4bjFaQ0lDRUFq
+NU5rQXZickJyM2dtNFFhbDl1bTBpQnVWVVVjTE52eHRFTnlYMgpvcGw5YWtFMzA2
+Q3hIRXQ4N2tKak93Ci0+IGpsb2MuZnIvYWdlLXBsdWdpbi10cmV6b3Itc2xpcDEx
+IEFBQjBaWE4wY3lBeQovQkJ4enJYY25hUHczdzl0ellsQStsZ2M5UTh5QTFoa2cv
+NHMrWG83Rk5hMUxHYUlXNHFDMVJEZmZ6ZUN3bU5WCkVYWHVMbFBjOE80bUlJanRY
+bjFNemcKLS0tIEMvZU54SEYvcjEyYmdIRnJCWWljZ2l6UisvQ21sVTJQWnJLOStJ
+bFZpRjAKcMtntuJf+DbF0DAfozLxTbvrq2FhrF7dl+ZCVXcrO27uucYxkkjKEC9Q
+0A==
 -----END AGE ENCRYPTED FILE-----
 """
     else:
         identity1_path = context.write_identity(tmp_path)
-        identity2_path = context.write_identity(tmp_path)
+        identity2_path = context.write_identity(tmp_path, key="tests 2")
         ciphertext = context.age("-i", identity1_path, "-i", identity2_path, "-e", stdin=message).stdout
 
     plaintext = context.age("-i", identity1_path, "-d", stdin=ciphertext).stdout
@@ -176,17 +170,17 @@ def test_mixed_identity_types(context: Context, tmp_path, mode: Mode):
         )
         plugin_identity_path = context.write_identity(
             tmp_path,
-            "AGE-PLUGIN-TREZOR-SLIP11-1HWZ0TMJEZ3R4AFAXE6G457WPVUQQQAR9WD6QXSLHA6"
+            "AGE-PLUGIN-TREZOR-SLIP11-1QQQ8GETNW3ESEPWSWU",
         )
         ciphertext = b"""-----BEGIN AGE ENCRYPTED FILE-----
-YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAwVElKdHFsbzhxSVg3Mkps
-dmgweTFoWDR6TnliU1IwN3VuUFoyazVQcFNnClJtL2NxRGpOTUwvSEJiN3ppMUFF
-SVJTL3dMQ1lzWUhkbzZYTktLcXgrbkUKLT4gamxvYy5mci9hZ2UtcGx1Z2luLXRy
-ZXpvci1zbGlwMTEgdTRUMTdsa1VSMTZucHM2UldubkJadwpyVnp3NXNoL3ZXcEZD
-V1F2UHNMSVpaanM4eXJYNXYxTmtSeEcvc05KdlY1alpiRTRwTnJSSmlRMjlWd2cr
-eXBsCnZsRjRodzBjcjBtN3lyMFJBQTFrU3cKLS0tIEkrZ3NEWmxDLzl2MHIwVCtN
-Yzh2Q0o2SDZHeHVjc0YvUmZPUVJpc3FPTWcKLbnrfLs85pny1FoCiKoFZBmHer5T
-coo7ifd3+gAjSNQ3KqOJ
+YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBpMlFUMUtTb3dLU2hkY1dN
+WTdOTUtySEZLaDJtdnNuZzVjdU9Pd2tWWlQ0CnE0RVVHNVJPcjRKYmhxZldhWWhz
+K0wraHdReEtFRjBJWFdKNHdOa3Fhb2cKLT4gamxvYy5mci9hZ2UtcGx1Z2luLXRy
+ZXpvci1zbGlwMTEgQUFCMFpYTjBjdwpjckZ6TnorTURRYW5mMUpzYjdINVc3Vk01
+dEJ3N3NXOUsxcEpxaGJXSjV0WllLbFJITmI0Q3F5aTVFYk1TMFZRCm9wbDlha0Uz
+MDZDeEhFdDg3a0pqT3cKLS0tICtweXRuOTh2MzVONWdnVmlzQXY2dUJ3SllhM2p0
+bEdONDhvQjVUdHlEV0EKVgopFqQl1kHDo6BHthuEfHwJfKcnOefQlHfdgtjhaIZ1
+VZzp
 -----END AGE ENCRYPTED FILE-----
 """
     else:
@@ -206,16 +200,16 @@ def test_decrypting_with_wrong_identity(context: Context, tmp_path):
 
     identity_path = context.write_identity(
         tmp_path,
-        "AGE-PLUGIN-TREZOR-SLIP11-1HWZ0TMJEZ3R4AFAXE6G457WPVUQQQAR9WD6QXSLHA6",
+        "AGE-PLUGIN-TREZOR-SLIP11-1QQQ8GETNW3EJQVSWMQSV4",
     )
 
     ciphertext = b"""-----BEGIN AGE ENCRYPTED FILE-----
 YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IGpsb2MuZnIvYWdlLXBsdWdpbi10cmV6
-b3Itc2xpcDExIDQ4WDA0elQ1U1J5aGsrY2hIMXN6SlEKSDUyYXhFOTRkOThQa2RC
-RlVYZFc4WmRGK2dETXRJQzk4cm5tdTVKSTFzL1p5bnUvem9YNWFOazB2YW1IT090
-MQp2bEY0aHcwY3IwbTd5cjBSQUExa1N3Ci0tLSBSVDRiVC9TVmtlWmN5UVNnSWtI
-ZTJkTDNScUhIaXk0Q0xsTlAxakFjaTV3CvsMZri5j34EyjIrsEHitq0Ba6HQl2iG
-MBkyOvZ864jmG/H8xrQnT6l4/cCl8Q==
+b3Itc2xpcDExIEFBQjBaWE4wY3cKMVVJaHVSRFdoMFQ4Q3EzbXowWmZoSTlPaU5O
+WXFTclZhNUJ5cENQM3ZFMk8wQ1ltbERwMSs2eXJmRUhWTDRtVgpvcGw5YWtFMzA2
+Q3hIRXQ4N2tKak93Ci0tLSBzdGtVbVBZNHZrdjNkdVlxdzdNYWJreE16ckZpNEo0
+aTk4aVZoSXhLVko4CruZup5FmK4PMHxf1tvV9Hsz4lxS+IHe/RkZqTVhLd8WsVCB
+KL/jH4fze5RFEA==
 -----END AGE ENCRYPTED FILE-----
 """
 
@@ -229,16 +223,16 @@ def test_decrypting_altered_ciphertext(context: Context, tmp_path):
 
     identity_path = context.write_identity(
         tmp_path,
-        "AGE-PLUGIN-TREZOR-SLIP11-1U0ZLFCE5L9Y3EGVNUUS37KENY5QQQAR9WD6Q74YU73",
+        "AGE-PLUGIN-TREZOR-SLIP11-1QQQ8GETNW3ESEPWSWU",
     )
 
     ciphertext = b"""-----BEGIN AGE ENCRYPTED FILE-----
 YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IGpsb2MuZnIvYWdlLXBsdWdpbi10cmV6
-b3Itc2xpcDExIDQ4WDA0elQ1U1J5aGsrY2hIMXN6SlEKSDUyYXhFOTRkOThQa2RC
-RlVYZFc4WmRGK2dETXRJQzk4cm5tdTVkSTFzL1p5bnUvem9YNWFOazB2YW1IT090
-MQp2bEY0aHcwY3IwbTd5cjBSQUExa1N3Ci0tLSBSVDRiVC9TVmtlWmN5UVNnSWtI
-ZTJkTDNScUhIaXk0Q0xsTlAxakFjaTV3CvsMZri5j34EyjIrsEHitq0Ba6HQl2iG
-MBkyOvZ864jmG/H8xrQnT6l4/cCl8Q==
+b3Itc2xpcDExIEFBQjBaWE4wY3cKMVVJaHVSRFdoMFQ4Q3EzbXowWmZoSTlPaU5O
+WXFTclZhNUJ5cENqM3ZFMk8wQ1ltbERwMSs2eXJmRUhWTDRtVgpvcGw5YWtFMzA2
+Q3hIRXQ4N2tKak93Ci0tLSBzdGtVbVBZNHZrdjNkdVlxdzdNYWJreE16ckZpNEo0
+aTk4aVZoSXhLVko4CruZup5FmK4PMHxf1tvV9Hsz4lxS+IHe/RkZqTVhLd8WsVCB
+KL/jH4fze5RFEA==
 -----END AGE ENCRYPTED FILE-----
 """
 
