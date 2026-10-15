@@ -7,7 +7,13 @@ symmetric encryption.
 
 ## Usage
 
-The first step is to generate an identity, which will represent our secret key. Identities generated
+Install the plugin:
+
+```shell
+pip install age-plugin-trezor-slip11
+```
+
+The next step is to generate an identity, which will represent our secret key. Identities generated
 by this plugin don't contain any secret information, they only contain parameters for tweaking encryption.
 
 The `KEY` parameter in the example bellow is what will be displayed on the device's screen when encrypting
