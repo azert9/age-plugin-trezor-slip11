@@ -34,7 +34,7 @@ class LazyDevice(contextlib.AbstractContextManager, _encryption.Device):
             ask_on_decrypt=params.ask_on_decrypt,
         )
 
-    def _decrypt_raw(self, params: Params, value: bytes) -> bytes:
+    def _decrypt_raw(self, params: _encryption.Params, value: bytes) -> bytes:
         return trezorlib.misc.decrypt_keyvalue(
             session=self.__get_session(),
             n=_constants.BIP_32_PATH,
