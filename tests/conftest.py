@@ -3,13 +3,22 @@ import enum
 import pytest
 
 
-class Mode(enum.Enum):
+class Backend(enum.Enum):
     VIRTUAL = 0  # encrypt and decrypt with a fake backend
-    STORED = 1  # tests only decryption, and use fixed tests vectors
-    REAL = 2  # encrypt and decrypt with a real device
+    STORED = 1  # use fixed tests vectors
+    REAL = 2  # encrypt and decrypt with a real device or emulator
 
 
-MODES = [Mode.VIRTUAL, Mode.STORED, Mode.REAL, ]
+ENCRYPTORS = [
+    Backend.STORED,
+    Backend.VIRTUAL,
+    Backend.REAL,
+]
+
+DECRYPTORS = [
+    Backend.VIRTUAL,
+    Backend.REAL,
+]
 
 
 def pytest_addoption(parser):
@@ -23,8 +32,10 @@ def pytest_addoption(parser):
 
 def pytest_collection_modifyitems(config, items):
     if not config.getoption("--use-device"):
+        # skip tests that depend on a real device
         skip_real_mode = pytest.mark.skip(reason="tests against a device are not enabled")
         for item in items:
             if getattr(item, "callspec", None) is not None:
-                if item.callspec.params.get("mode").value == Mode.REAL.value:
-                    item.add_marker(skip_real_mode)
+                for param in item.callspec.params.values():
+                    if param.value == Backend.REAL.value:
+                        item.add_marker(skip_real_mode)

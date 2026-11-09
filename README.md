@@ -30,20 +30,59 @@ age -i ./identity.txt -e -a <<<'super secret' > encrypted.age
 age -i ./identity.txt -d < ./encrypted.age
 ```
 
-## Running tests
+## Recovering Data Without a Device
+
+This plugin can directly load a SLIP-0039 mnemonic and reproduce the behavior of a
+real device. This is useful for recovery situation, if you have lost access to your
+physical device.
+
+The `soft` option should be enabled at install:
+
+```shell
+pip install age-plugin-trezor-slip11[soft]
+```
+
+You can then pass the mnemonic through an environment variable:
+
+```shell
+export AGE_PLUGIN_TREZOR_SLIP11_UNSAFE_MNEMONIC="display email academic ..."
+age -i identity -d < ./encrypted.age
+```
+
+Please note that mnemonics should normally stay offline, otherwise you are defeating
+the whole purpose of a hardware wallet. This feature should be reserved for testing
+or desperate situations.
+
+## Running Tests
 
 ```shell
 # from the root of the project
-pip install pytest
+pip install -r requirements.txt
 pytest  # run tests, excluding those depending on a connection with a device...
-pytest --use-device  # ... or including all tests
+```
+
+To run tests against a real device or emulator, you first need to initialize it with this
+mnemonic:
+
+```
+display email academic academic credit violence anatomy package umbrella learn rhyme belong merchant union safari finger curly ugly bike flame
+```
+
+You can then run all the tests:
+
+```shell
+pytest --use-device
 ```
 
 ## Development
 
 For debugging, set the environment variable `AGE_PLUGIN_TREZOR_SLIP11_DEBUG_FILE=/path/to/log/file`.
 
-For using a fake backend instead of connecting to a device, set `AGE_PLUGIN_TREZOR_SLIP11_UNSAFE_TEST_MODE=true`.
+For using a fake backend instead of a real device, set this variable to a SLIP-0039 mnemonic:
+
+```shell
+export AGE_PLUGIN_TREZOR_SLIP11_UNSAFE_MNEMONIC="display email academic academic credit violence anatomy package umbrella learn rhyme belong merchant union safari finger curly ugly bike flame"
+```
 
 ## References
 

@@ -20,7 +20,15 @@ license-files = ["LICENSE.txt"]
 
 requires-python = ">=3.10"
 dependencies = [
-    "trezor ~= 0.20"
+    "trezor ~= 0.20",
+]
+optional-dependencies.all = [
+    "age-plugin-trezor-slip11[soft]"
+]
+optional-dependencies.soft = [
+    "pycryptodome ~= 4.4",
+    "shamir-mnemonic ~= 0.3",
+    "secp256k1 ~= 0.14",
 ]
 
 [project.scripts]

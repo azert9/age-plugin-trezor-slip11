@@ -12,6 +12,11 @@ from . import _bech32
 from . import _encryption
 from . import _trezor
 
+try:
+    from . import _soft
+except ModuleNotFoundError:
+    _soft = None
+
 _AGE_RECIPIENT_STANZA = "jloc.fr/age-plugin-trezor-slip11"
 _AGE_IDENTITY_HRP = "AGE-PLUGIN-TREZOR-SLIP11-"
 
@@ -271,8 +276,11 @@ def _main_inner(args):
             stanzas.append(stanza)
 
         try:
-            if os.environ.get("AGE_PLUGIN_TREZOR_SLIP11_UNSAFE_TEST_MODE") == "true":
-                _run(protocol, stanzas, _encryption.FakeDevice())
+            mnemonic = os.environ.get("AGE_PLUGIN_TREZOR_SLIP11_UNSAFE_MNEMONIC")
+            if mnemonic:
+                if _soft is None:
+                    raise Exception("software-based cryptography is not available")
+                _run(protocol, stanzas, _soft.SoftwareDevice(mnemonic))
             else:
                 with _trezor.LazyDevice() as device:
                     _run(protocol, stanzas, device)
