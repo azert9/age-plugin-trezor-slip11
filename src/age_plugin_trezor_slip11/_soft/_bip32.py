@@ -14,7 +14,7 @@ class Node:
         self.__chain_code = chain_code
 
     @staticmethod
-    def root(seed: bytes) -> Node:
+    def root(seed: bytes) -> "Node":
         h = hmac.digest(b"Bitcoin seed", seed, hashlib.sha512)
         return Node(secp256k1.PrivateKey(h[:32]), h[32:])
 
@@ -22,7 +22,7 @@ class Node:
     def key(self) -> secp256k1.PrivateKey:
         return self.__key
 
-    def child(self, index: int) -> Node:
+    def child(self, index: int) -> "Node":
         assert 0 <= index < 2 ** 32
         hardened = index >= 2 ** 31
 
